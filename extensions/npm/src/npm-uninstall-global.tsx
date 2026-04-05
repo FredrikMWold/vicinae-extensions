@@ -1,18 +1,9 @@
 import { Action, ActionPanel, Color, Icon, List } from "@vicinae/api";
 import { NpmErrorDetails } from "./components/NpmErrorDetails";
-import { NpmTerminalUsageDetails } from "./components/NpmTerminalUsageDetails";
 import { useUninstallPackages } from "./hooks/useUninstallPackages";
-import type { Package } from "./types";
+import { Package } from "./types";
 
-export default function NpmUninstall(props: {
-  arguments?: {
-    path: string;
-  };
-}) {
-  console.log(props);
-  const path = props?.arguments?.path;
-  if (!path) return <NpmTerminalUsageDetails />;
-
+export default function NpmUninstallGlobal() {
   const {
     npmCommand,
     packages,
@@ -21,8 +12,7 @@ export default function NpmUninstall(props: {
     selectedPackages,
     error,
     clearError,
-  } = useUninstallPackages(path);
-
+  } = useUninstallPackages();
   if (error) {
     return <NpmErrorDetails error={error} clear={clearError} />;
   }
@@ -30,15 +20,15 @@ export default function NpmUninstall(props: {
     <List searchBarPlaceholder="Filter npm packages...">
       <List.Section title="Packages">
         {packages
-          .filter((pkg) => !pkg.dev)
-          .map((pkg) => (
+          .filter((dep) => !dep.dev)
+          .map((dep) => (
             <DependencyListItem
-              key={pkg.name}
-              pkg={pkg}
+              key={dep.name}
+              dep={dep}
               npmCommand={npmCommand}
               onSelect={onSelectDependency}
               selected={selectedPackages.some(
-                (selected) => selected.name === pkg.name,
+                (selected) => selected.name === dep.name,
               )}
               uninstallPackages={uninstallPackages}
             />
@@ -46,15 +36,15 @@ export default function NpmUninstall(props: {
       </List.Section>
       <List.Section title="Dev Dependencies">
         {packages
-          .filter((pkg) => pkg.dev)
-          .map((pkg) => (
+          .filter((dep) => dep.dev)
+          .map((dep) => (
             <DependencyListItem
-              key={pkg.name}
-              pkg={pkg}
+              key={dep.name}
+              dep={dep}
               npmCommand={npmCommand}
               onSelect={onSelectDependency}
               selected={selectedPackages.some(
-                (selected) => selected.name === pkg.name,
+                (selected) => selected.name === dep.name,
               )}
               uninstallPackages={uninstallPackages}
             />
@@ -65,28 +55,28 @@ export default function NpmUninstall(props: {
 }
 
 const DependencyListItem = ({
-  pkg,
+  dep,
   selected,
   onSelect,
   uninstallPackages,
   npmCommand,
 }: {
-  pkg: Package;
+  dep: Package;
   selected: boolean;
-  onSelect: (pkg: Package) => void;
+  onSelect: (dependency: Package) => void;
   uninstallPackages: () => void;
   npmCommand: string;
 }) => {
   return (
     <List.Item
-      key={pkg.name}
-      title={pkg.name}
+      key={dep.name}
+      title={dep.name}
       icon={selected ? Icon.CheckCircle : Icon.Circle}
       accessories={[
         {
           text: {
             color: Color.Blue,
-            value: pkg.version,
+            value: dep.version,
           },
         },
       ]}
@@ -96,7 +86,7 @@ const DependencyListItem = ({
             title={selected ? "Deselect" : "Select"}
             icon={selected ? Icon.Circle : Icon.CheckCircle}
             onAction={() => {
-              onSelect(pkg);
+              onSelect(dep);
             }}
           />
           <Action

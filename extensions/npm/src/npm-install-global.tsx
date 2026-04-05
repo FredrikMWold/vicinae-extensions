@@ -2,17 +2,10 @@ import { Action, ActionPanel, Color, Icon, List } from "@vicinae/api";
 import { useState } from "react";
 import { useNpmSeach, type NPMPackage } from "./hooks/useNpmSeach";
 import { NpmErrorDetails } from "./components/NpmErrorDetails";
-import { NpmTerminalUsageDetails } from "./components/NpmTerminalUsageDetails";
 import { useInstallPackages } from "./hooks/useInstallPackages";
 import { PackageDetails } from "./components/PackageDetails";
 
-export default function NpmInstall(props: {
-  arguments?: {
-    path: string;
-  };
-}) {
-  const path = props?.arguments?.path;
-  if (!path) return <NpmTerminalUsageDetails />;
+export default function NpmInstallGlobal() {
   const [query, setQuery] = useState("");
   const [isShowingDetails, setIsShowingDetails] = useState(false);
   const {
@@ -23,7 +16,7 @@ export default function NpmInstall(props: {
     error,
     clearError,
     npmCommand,
-  } = useInstallPackages(path);
+  } = useInstallPackages();
   const { isLoading, data } = useNpmSeach(query);
   const npmPackages = data.map((pkg) => ({
     ...pkg,
@@ -32,10 +25,7 @@ export default function NpmInstall(props: {
   const isSelectedDependency = (pkgName: string) =>
     selectedPackages.some((selected) => selected.name === pkgName);
 
-  if (error) {
-    return <NpmErrorDetails error={error} clear={clearError} />;
-  }
-
+  if (error) return <NpmErrorDetails error={error} clear={clearError} />;
   return (
     <List
       searchBarPlaceholder="Search npm packages..."
@@ -59,7 +49,6 @@ export default function NpmInstall(props: {
               selected={isSelectedDependency(pkg.name)}
               onSelect={onSelectDependency}
               onInstall={() => installPackages(false)}
-              onInstallDev={() => installPackages(true)}
               onToggleDetails={() => setIsShowingDetails((prev) => !prev)}
             />
           ))}
@@ -75,7 +64,6 @@ export default function NpmInstall(props: {
               selected={isSelectedDependency(pkg.name)}
               onSelect={onSelectDependency}
               onInstall={() => installPackages(false)}
-              onInstallDev={() => installPackages(true)}
               onToggleDetails={() => setIsShowingDetails((prev) => !prev)}
               npmCommand={npmCommand}
             />
@@ -90,7 +78,6 @@ const PackageListItem = ({
   selected,
   onSelect,
   onInstall,
-  onInstallDev,
   onToggleDetails,
   npmCommand,
 }: {
@@ -99,7 +86,6 @@ const PackageListItem = ({
   onSelect: (pkg: NPMPackage) => void;
   onToggleDetails: () => void;
   onInstall: () => void;
-  onInstallDev: () => void;
   npmCommand: string;
 }) => {
   return (
@@ -134,11 +120,6 @@ const PackageListItem = ({
             onAction={onToggleDetails}
           />
           <Action title="Install" icon={Icon.Download} onAction={onInstall} />
-          <Action
-            title="Install dev"
-            icon={Icon.Download}
-            onAction={onInstallDev}
-          />
           <ActionPanel.Section>
             <Action.CopyToClipboard
               title="Copy npm install command"

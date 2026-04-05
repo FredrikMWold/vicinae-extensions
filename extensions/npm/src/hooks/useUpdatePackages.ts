@@ -1,13 +1,12 @@
-import { showToast, Toast } from "@vicinae/api";
+import { Cache, showToast, Toast } from "@vicinae/api";
 import { execSync } from "child_process";
 import { useState } from "react";
-import { getPackageJson } from "../utils/getPackageJson";
 import type { PackageManager } from "../utils/getPackageManager";
-import type { NPMProject } from "../types";
+import type { Package } from "../types";
 import { usePackageManger } from "./usePackageManger";
+import { getInstalledPackages } from "../utils/getPackageJson";
 
-export const useUpdatePackages = (pwd: string) => {
-  const [project, setProject] = useState<NPMProject>(getPackageJson(pwd));
+export const useUpdatePackages = (path?: string) => {
   const [selectedDependencies, setSelectedDependencies] = useState<string[]>(
     [],
   );
@@ -15,12 +14,16 @@ export const useUpdatePackages = (pwd: string) => {
     string[]
   >([]);
   const [error, setError] = useState<string>("");
-  const { packageManager } = usePackageManger(pwd);
+  const { packageManager } = usePackageManger(path);
+  const [packages, setPackages] = useState<Package[]>(() =>
+    getInstalledPackages(packageManager, path),
+  );
 
   const npmCommand = buildUpdateCommand(
     packageManager,
     selectedDependencies,
     selectedDevDependencies,
+    !path,
   );
 
   const updatePackages = async () => {
@@ -31,7 +34,7 @@ export const useUpdatePackages = (pwd: string) => {
 
     try {
       execSync(npmCommand, {
-        cwd: pwd,
+        cwd: path,
       });
     } catch (error) {
       if (error instanceof Error) setError(error.message);
@@ -47,7 +50,7 @@ export const useUpdatePackages = (pwd: string) => {
       title: `Successfully updated packages`,
       style: Toast.Style.Success,
     });
-    setProject(getPackageJson(pwd));
+    setPackages(getInstalledPackages(packageManager, path));
     setSelectedDependencies([]);
     setSelectedDevDependencies([]);
   };
@@ -71,7 +74,7 @@ export const useUpdatePackages = (pwd: string) => {
   return {
     updatePackages,
     error,
-    project,
+    packages,
     selectedDependencies,
     selectedDevDependencies,
     onSelectDependency,
@@ -85,6 +88,7 @@ const buildUpdateCommand = (
   packageManager: PackageManager,
   dependencies: string[],
   devDependencies: string[],
+  global = false,
 ) => {
   const deps = dependencies.map((name) => `${name}@latest`).join(" ");
   const devDeps = devDependencies.map((name) => `${name}@latest`).join(" ");
@@ -92,21 +96,21 @@ const buildUpdateCommand = (
   switch (packageManager) {
     case "pnpm":
       return [
-        deps ? `pnpm update ${deps}` : "",
+        deps ? `pnpm update ${deps} ${global ? "-g" : ""}` : "",
         devDeps ? `pnpm update ${devDeps} -D` : "",
       ]
         .filter(Boolean)
         .join(" && ");
     case "bun":
       return [
-        deps ? `bun add ${deps}` : "",
+        deps ? `bun add ${deps} ${global ? "-g" : ""}` : "",
         devDeps ? `bun add ${devDeps} -d` : "",
       ]
         .filter(Boolean)
         .join(" && ");
     case "npm":
       return [
-        deps ? `npm install ${deps}` : "",
+        deps ? `npm install ${deps} ${global ? "-g" : ""}` : "",
         devDeps ? `npm install ${devDeps} --save-dev` : "",
       ]
         .filter(Boolean)

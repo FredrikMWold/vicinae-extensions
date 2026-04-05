@@ -1,11 +1,11 @@
 import { Detail } from "@vicinae/api";
 
 const INSTALL_DEEPLINK =
-  'vicinae://extensions/FredrikMWold/npm/npm-install?arguments={\"pwd\":\"$(pwd)\"}"';
+  'vicinae://launch/@FredrikMWold/npm/npm-install?arguments={\"path\":\"$(pwd)\"}"';
 const UNINSTALL_DEEPLINK =
-  'vicinae://extensions/FredrikMWold/npm/npm-uninstall?arguments={\"pwd\":\"$(pwd)\"}"';
+  'vicinae://launch/@FredrikMWold/npm/npm-uninstall?arguments={\"path\":\"$(pwd)\"}"';
 const UPDATE_DEEPLINK =
-  'vicinae://extensions/FredrikMWold/npm/npm-update?arguments={\"pwd\":\"$(pwd)\"}"';
+  'vicinae://launch/@FredrikMWold/npm/npm-update?arguments={\"path\":\"$(pwd)\"}"';
 
 export const NpmTerminalUsageDetails = () => {
   return (
@@ -27,13 +27,13 @@ This command needs a project directory and should be launched from the terminal 
 
 \`\`\`bash
 npmi() {
-    vicinae 'vicinae://extensions/FredrikMWold/npm/npm-install?arguments={"pwd":"'"$(pwd)"'"}'
+    vicinae 'vicinae://launch/@FredrikMWold/npm/npm-install?arguments={"path":"'"$(pwd)"'"}'
 }
 npmr() {
-    vicinae 'vicinae://extensions/FredrikMWold/npm/npm-uninstall?arguments={"pwd":"'"$(pwd)"'"}'
+    vicinae 'vicinae://launch/@FredrikMWold/npm/npm-uninstall?arguments={"path":"'"$(pwd)"'"}'
 }
 npmu() {
-    vicinae 'vicinae://extensions/FredrikMWold/npm/npm-update?arguments={"pwd":"'"$(pwd)"'"}'
+    vicinae 'vicinae://launch/@FredrikMWold/npm/npm-update?arguments={"path":"'"$(pwd)"'"}'
 }
 \`\`\``}
     />

@@ -7,20 +7,20 @@ export default function NpmSearch() {
   const [query, setQuery] = useState("");
   const [isShowingDetails, setIsShowingDetails] = useState(false);
 
-  let { loading, data: npmPackages } = useNpmSeach(query);
+  let { isLoading, data: npmPackages } = useNpmSeach(query);
 
   return (
     <List
       searchBarPlaceholder="Search npm packages..."
-      isLoading={loading}
+      isLoading={isLoading}
       onSearchTextChange={setQuery}
       searchText={query}
       isShowingDetail={isShowingDetails}
     >
-      {npmPackages.length === 0 && query.length > 0 && !loading && (
+      {npmPackages.length === 0 && query.length > 0 && !isLoading && (
         <List.EmptyView title="No packages found" />
       )}
-      {npmPackages.length === 0 && query.length === 0 && !loading && (
+      {npmPackages.length === 0 && query.length === 0 && !isLoading && (
         <List.EmptyView title="Start typing to search for npm packages" />
       )}
       <List.Section title="Search results">

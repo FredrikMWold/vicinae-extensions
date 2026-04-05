@@ -1,51 +1,31 @@
+import { useFetch } from "@raycast/utils";
 import { useDebounce } from "@uidotdev/usehooks";
-import { useState, useEffect } from "react";
-import type { NPMProject } from "../types";
 
 export const useNpmSeach = (query: string) => {
-  const [data, setData] = useState<NPMPackage[]>([]);
-  const [loading, setLoading] = useState(false);
   const debouncedSearchTerm = useDebounce(query, 300);
+  const { data = [], isLoading } = useFetch(
+    `https://registry.npmjs.com/-/v1/search?text=${debouncedSearchTerm}&size=20`,
+    {
+      keepPreviousData: true,
+      execute: debouncedSearchTerm.length > 0,
+      parseResponse: async (response) => {
+        const data = (await response.json()) as NPMApiResponse;
+        return (data?.objects ?? []).map((obj) => ({
+          name: obj.package.name,
+          version: obj.package.version,
+          description: obj.package.description ?? "",
+          license: obj.package.license,
+          weeklyDownloads: obj.downloads?.weekly,
+          publisher: {
+            username: obj.package.publisher?.username ?? "Unknown",
+            email: obj.package.publisher?.email ?? "Unknown",
+          },
+        }));
+      },
+    },
+  );
 
-  useEffect(() => {
-    const abortController = new AbortController();
-    if (!debouncedSearchTerm) return setData([]);
-
-    const getPackages = async () => {
-      setLoading(true);
-      const url = new URL("https://registry.npmjs.com/-/v1/search");
-      url.searchParams.set("text", encodeURIComponent(debouncedSearchTerm));
-      url.searchParams.set("size", "20");
-
-      const res = await fetch(url.toString(), {
-        signal: abortController.signal,
-      });
-      setLoading(false);
-      if (!res.ok) return;
-      const data = (await res.json()) as NPMApiResponse;
-
-      let packages: NPMPackage[] = (data.objects ?? []).map((obj) => ({
-        name: obj.package.name,
-        version: obj.package.version,
-        description: obj.package.description ?? "",
-        license: obj.package.license,
-        weeklyDownloads: obj.downloads?.weekly,
-        publisher: {
-          username: obj.package.publisher?.username ?? "Unknown",
-          email: obj.package.publisher?.email ?? "Unknown",
-        },
-      }));
-
-      setData(packages);
-    };
-
-    getPackages();
-
-    return () => {
-      abortController.abort();
-    };
-  }, [debouncedSearchTerm]);
-  return { data, loading };
+  return { data, isLoading };
 };
 
 type NPMApiResponse = {

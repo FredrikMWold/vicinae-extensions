@@ -1,36 +1,42 @@
-import { useState, useEffect } from "react";
-import { fetchPackageMetadata } from "../api/fetchPackageMetadata";
-import type { Dependency } from "../types";
+import { useFetch } from "@raycast/utils";
+import semver from "semver";
+import type { Package } from "../types";
 
-export const useGetVersionUpdate = (npmPackage: Dependency) => {
-  const [loading, setLoading] = useState(false);
-  const [versionData, setVersionData] = useState<{
-    name: string;
-    version: string;
-    hasUpdate: boolean;
-    newVersion: string;
-  } | null>(null);
+export const useGetVersionUpdate = (npmPackage: Package) => {
+  const encodedName = encodeURIComponent(npmPackage.name);
 
-  useEffect(() => {
-    const abortController = new AbortController();
+  const { data, isLoading } = useFetch(
+    `https://registry.npmjs.com/${encodedName}`,
+    {
+      parseResponse: async (response) => {
+        const data = (await response.json()) as Response;
+        const latestVersion = data["dist-tags"].latest;
+        const latestSemver = semver.coerce(latestVersion);
+        const currentSemver = semver.coerce(npmPackage.version);
+        const hasUpdate =
+          latestSemver !== null &&
+          currentSemver !== null &&
+          semver.gt(latestSemver, currentSemver);
+        return {
+          hasUpdate,
+          versionData: {
+            name: npmPackage.name,
+            version: npmPackage.version,
+            hasUpdate,
+            newVersion: latestVersion,
+          },
+        } as const;
+      },
+    },
+  );
 
-    setLoading(true);
-    const fetchAllMetadata = async () => {
-      const metaData = await fetchPackageMetadata(
-        npmPackage.name,
-        npmPackage.version,
-        abortController.signal,
-      );
+  if (data) return data;
+  return { hasUpdate: false, isLoading, versionData: undefined };
+};
 
-      setVersionData(metaData);
-      setLoading(false);
-    };
-
-    fetchAllMetadata();
-
-    return () => {
-      abortController.abort();
-    };
-  }, [npmPackage]);
-  return { hasUpdate: !!versionData?.hasUpdate, loading, versionData };
+type Response = {
+  name: string;
+  "dist-tags": {
+    latest: string;
+  };
 };

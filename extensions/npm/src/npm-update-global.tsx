@@ -1,37 +1,27 @@
 import { Action, ActionPanel, Color, Icon, List } from "@vicinae/api";
 import semver from "semver";
 import { NpmErrorDetails } from "./components/NpmErrorDetails";
-import { NpmTerminalUsageDetails } from "./components/NpmTerminalUsageDetails";
 import { useGetVersionUpdate } from "./hooks/useGetVersionUpdate";
 import { useUpdatePackages } from "./hooks/useUpdatePackages";
 import type { Package } from "./types";
 
-export default function NpmUpdate(props: {
-  arguments?: {
-    path: string;
-  };
-}) {
-  const path = props?.arguments?.path;
-  if (!path) return <NpmTerminalUsageDetails />;
-
+export default function NpmUpdateGlobal() {
   const {
     packages,
     updatePackages,
     selectedDependencies,
-    selectedDevDependencies,
     error,
     clearError,
     onSelectDependency,
-    onSelectDevDependency,
     npmCommand,
-  } = useUpdatePackages(path);
+  } = useUpdatePackages();
 
   if (error) {
     return <NpmErrorDetails error={error} clear={clearError} />;
   }
   return (
     <List>
-      <List.Section title="Dependencies">
+      <List.Section title="Packages">
         {packages
           .filter((pkg) => !pkg.dev)
           .map((pkg) => (
@@ -41,20 +31,6 @@ export default function NpmUpdate(props: {
               selected={selectedDependencies.includes(pkg.name)}
               updatePackage={updatePackages}
               onSelect={(name) => onSelectDependency(name)}
-              npmCommand={npmCommand}
-            />
-          ))}
-      </List.Section>
-      <List.Section title="Dev Dependencies">
-        {packages
-          .filter((pkg) => pkg.dev)
-          .map((pkg) => (
-            <DependencyListItem
-              key={pkg.name}
-              pkg={pkg}
-              updatePackage={updatePackages}
-              onSelect={(name) => onSelectDevDependency(name)}
-              selected={selectedDevDependencies.includes(pkg.name)}
               npmCommand={npmCommand}
             />
           ))}
