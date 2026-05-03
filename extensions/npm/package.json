@@ -3,7 +3,7 @@
   "name": "npm",
   "title": "NPM",
   "description": "An extenstion to manage npm packages",
-  "categories": [],
+  "categories": ["Developer Tools"],
   "license": "MIT",
   "author": "FredrikMWold",
   "contributors": [],

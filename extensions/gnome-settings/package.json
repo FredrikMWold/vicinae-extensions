@@ -3,7 +3,7 @@
   "name": "gnome-settings",
   "title": "GNOME Settings",
   "description": "Lists and opens GNOME Control Center panels for easy access",
-  "categories": [],
+  "categories": ["System"],
   "license": "MIT",
   "author": "dagimg-dot",
   "contributors": [],

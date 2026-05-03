@@ -6,6 +6,7 @@
   "author": "knoopx",
   "license": "MIT",
   "icon": "icon.png",
+  "categories": ["Developer Tools"],
   "commands": [
     {
       "name": "issues",
