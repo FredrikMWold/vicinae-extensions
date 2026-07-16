@@ -1,0 +1,90 @@
+{
+  "$schema": "https://raw.githubusercontent.com/vicinaehq/vicinae/refs/heads/main/extra/schemas/extension.json",
+  "name": "radix",
+  "title": "Radix",
+  "description": "An extension for managing and montering radix deployments",
+  "categories": [],
+  "license": "MIT",
+  "author": "FredrikMWold",
+  "contributors": [],
+  "pastContributors": [],
+  "icon": "extension_icon.png",
+  "commands": [
+    {
+      "name": "pipeline-jobs",
+      "title": "Pipeline jobs",
+      "description": "Pipeline jobs",
+      "mode": "view"
+    },
+    {
+      "name": "environments",
+      "title": "Environments",
+      "description": "List Radix environments and deployment state",
+      "mode": "view"
+    }
+  ],
+  "preferences": [
+    {
+      "name": "context",
+      "title": "Radix Context",
+      "description": "Radix platform context to connect to",
+      "type": "dropdown",
+      "required": false,
+      "default": "platform",
+      "data": [
+        {
+          "title": "Platform",
+          "value": "platform"
+        },
+        {
+          "title": "Production",
+          "value": "production"
+        },
+        {
+          "title": "Platform 2",
+          "value": "platform2"
+        },
+        {
+          "title": "Platform 3",
+          "value": "platform3"
+        },
+        {
+          "title": "Playground",
+          "value": "playground"
+        },
+        {
+          "title": "Development",
+          "value": "development"
+        }
+      ]
+    },
+    {
+      "name": "cluster",
+      "title": "Cluster",
+      "description": "Optional Radix cluster name for cluster-specific API hosts",
+      "type": "textfield",
+      "required": false
+    },
+    {
+      "name": "applications",
+      "title": "Applications",
+      "description": "Comma or newline separated application names to load by default",
+      "type": "textfield",
+      "required": false
+    }
+  ],
+  "scripts": {
+    "build": "vici build",
+    "dev": "vici develop",
+    "format": "biome format --write src",
+    "lint": "vici lint"
+  },
+  "dependencies": {
+    "@raycast/utils": "^2.2.2",
+    "@vicinae/api": "file:../../../vicinae/src/typescript/api"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.3.2",
+    "typescript": "^5.9.2"
+  }
+}
