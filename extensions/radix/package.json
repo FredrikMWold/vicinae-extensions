@@ -21,6 +21,12 @@
       "title": "Environments",
       "description": "List Radix environments and deployment state",
       "mode": "view"
+    },
+    {
+      "name": "applications",
+      "title": "Applications",
+      "description": "List Radix applications and cost information",
+      "mode": "view"
     }
   ],
   "preferences": [

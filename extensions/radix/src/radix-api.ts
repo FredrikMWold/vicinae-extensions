@@ -10,13 +10,46 @@ import {
 export type ClusterConfiguration = Record<string, unknown>;
 
 export type RadixApplicationSummary = {
+	cost?: RadixApplicationCost;
+	dnsAliases?: RadixDnsAlias[];
+	dnsExternalAliases?: RadixDnsAlias[];
 	name?: string;
 	environments?: RadixEnvironmentSummary[];
+	externalDNS?: RadixExternalDns[];
+	jobs?: RadixJobSummary[];
 	latestJob?: RadixJobSummary;
 };
 
+export type RadixApplicationCost = {
+	comment?: string;
+	costPercentageByCpu?: number;
+	costPercentageByMemory?: number;
+	creator?: string;
+	owner?: string;
+	raw?: unknown;
+	value?: number | string;
+	currency?: string;
+	wbs?: string;
+};
+
 export type RadixExternalDns = {
+	alias?: string;
+	componentName?: string;
+	environmentName?: string;
 	fqdn?: string;
+	host?: string;
+	hostname?: string;
+	url?: string;
+};
+
+export type RadixDnsAlias = {
+	alias?: string;
+	componentName?: string;
+	environmentName?: string;
+	fqdn?: string;
+	host?: string;
+	hostname?: string;
+	url?: string;
 };
 
 export type RadixPort = {
@@ -27,6 +60,7 @@ export type RadixPort = {
 
 export type RadixComponentSummary = {
 	commitID?: string;
+	dnsAliases?: RadixDnsAlias[];
 	externalDNS?: RadixExternalDns[];
 	gitTags?: string;
 	image?: string;
@@ -44,7 +78,9 @@ export type RadixDeploymentSummary = {
 	commitID?: string;
 	components?: RadixComponentSummary[];
 	createdByJob?: string;
+	dnsAliases?: RadixDnsAlias[];
 	environment?: string;
+	externalDNS?: RadixExternalDns[];
 	gitCommitHash?: string;
 	gitRef?: string;
 	gitRefType?: string;
@@ -59,6 +95,8 @@ export type RadixDeploymentSummary = {
 export type RadixEnvironmentSummary = {
 	activeDeployment?: RadixDeploymentSummary;
 	branchMapping?: string;
+	dnsAliases?: RadixDnsAlias[];
+	externalDNS?: RadixExternalDns[];
 	name?: string;
 	status?: string;
 };
@@ -84,6 +122,7 @@ export type RadixJobSummary = {
 };
 
 export type PipelineJobListItem = RadixJobSummary & {
+	application?: RadixApplicationSummary;
 	applicationName: string;
 };
 
@@ -94,6 +133,7 @@ export type PipelineJobsResult = {
 };
 
 export type EnvironmentListItem = RadixEnvironmentSummary & {
+	application?: RadixApplicationSummary;
 	applicationName: string;
 };
 
@@ -126,6 +166,107 @@ export const getApplications = async () => {
 	return radixFetch<RadixApplicationSummary[]>("/applications");
 };
 
+export const getApplication = async (applicationName: string) => {
+	return radixFetch<RadixApplicationSummary>(
+		`/applications/${encodeURIComponent(applicationName)}`,
+	);
+};
+
+export const getApplicationOverview = async () => {
+	const applications = await getApplications();
+
+	return mapWithConcurrency(applications, 6, async (application) => {
+		if (!application.name) {
+			return application;
+		}
+
+		const [applicationDetails, jobs, cost] = await Promise.all([
+			getApplicationDetailsOrFallback(application),
+			getApplicationJobsOrEmpty(application.name),
+			getApplicationCostOrUndefined(application.name),
+		]);
+		const latestJob = getLatestApplicationJob(
+			jobs.length > 0 ? jobs : (applicationDetails.jobs ?? []),
+		);
+
+		return {
+			...applicationDetails,
+			cost: cost ?? applicationDetails.cost,
+			latestJob: latestJob ?? applicationDetails.latestJob,
+		};
+	});
+};
+
+const getApplicationDetailsOrFallback = async (
+	application: RadixApplicationSummary,
+) => {
+	if (!application.name) {
+		return application;
+	}
+
+	try {
+		return {
+			...application,
+			...(await getApplication(application.name)),
+		};
+	} catch {
+		return application;
+	}
+};
+
+const getApplicationJobsOrEmpty = async (applicationName: string) => {
+	try {
+		return await getApplicationJobs(applicationName);
+	} catch {
+		return [];
+	}
+};
+
+const getApplicationCostOrUndefined = async (applicationName: string) => {
+	try {
+		return await getApplicationFutureCost(applicationName);
+	} catch {
+		return undefined;
+	}
+};
+
+const getLatestApplicationJob = (jobs: RadixJobSummary[]) => {
+	return [...jobs].sort(
+		(left, right) => getJobSortTime(right) - getJobSortTime(left),
+	)[0];
+};
+
+export const getApplicationFutureCost = async (
+	applicationName: string,
+): Promise<RadixApplicationCost> => {
+	const accessToken = await getValidAccessToken();
+	const response = await fetch(
+		`https://console.radix.equinor.com/cost-api/futurecost/${encodeURIComponent(applicationName)}`,
+		{
+			headers: {
+				Accept: "application/json",
+				Authorization: `Bearer ${accessToken}`,
+			},
+		},
+	);
+
+	if (!response.ok) {
+		throw new RadixApiError(
+			`Radix cost request failed with ${response.status} ${response.statusText}`,
+			response.status,
+			await response.text(),
+		);
+	}
+
+	const raw = (await response.json()) as unknown;
+	return {
+		raw,
+		value: extractCostValue(raw),
+		currency: extractCostCurrency(raw),
+		...extractCostMetadata(raw),
+	};
+};
+
 export const getEnvironmentOverview = async (
 	selectedApplicationName?: string,
 ): Promise<EnvironmentOverviewResult> => {
@@ -140,8 +281,12 @@ export const getEnvironmentOverview = async (
 		6,
 		async (applicationName) => {
 			try {
-				const environmentSummaries =
-					await getApplicationEnvironments(applicationName);
+				const applicationDetails = await getApplicationDetailsOrFallback({
+					name: applicationName,
+				});
+				const environmentSummaries = applicationDetails.environments?.length
+					? applicationDetails.environments
+					: await getApplicationEnvironments(applicationName);
 				const environments = await mapWithConcurrency(
 					environmentSummaries,
 					6,
@@ -151,10 +296,13 @@ export const getEnvironmentOverview = async (
 						}
 
 						try {
-							return await getApplicationEnvironment(
-								applicationName,
-								environment.name,
-							);
+							return {
+								...environment,
+								...(await getApplicationEnvironment(
+									applicationName,
+									environment.name,
+								)),
+							};
 						} catch {
 							return environment;
 						}
@@ -165,6 +313,7 @@ export const getEnvironmentOverview = async (
 					applicationName,
 					environments: environments.map((environment) => ({
 						...environment,
+						application: applicationDetails,
 						applicationName,
 					})),
 					error: undefined,
@@ -242,11 +391,17 @@ export const getPipelineJobsForAllApplications = async (
 		6,
 		async (applicationName) => {
 			try {
-				const jobs = await getApplicationJobs(applicationName);
+				const applicationDetails = await getApplicationDetailsOrFallback({
+					name: applicationName,
+				});
+				const jobs = applicationDetails.jobs?.length
+					? applicationDetails.jobs
+					: await getApplicationJobs(applicationName);
 				return {
 					applicationName,
 					jobs: jobs.map((job) => ({
 						...job,
+						application: applicationDetails,
 						applicationName,
 						appName: job.appName || applicationName,
 					})),
@@ -337,6 +492,85 @@ const mapWithConcurrency = async <Input, Output>(
 const getJobSortTime = (job: RadixJobSummary) => {
 	const timestamp = job.created || job.started || job.ended;
 	return timestamp ? new Date(timestamp).getTime() || 0 : 0;
+};
+
+const extractCostValue = (value: unknown): number | string | undefined => {
+	if (typeof value === "number" || typeof value === "string") {
+		return value;
+	}
+
+	if (!value || typeof value !== "object") {
+		return undefined;
+	}
+
+	const record = value as Record<string, unknown>;
+	const directValue =
+		record.cost ??
+		record.totalCost ??
+		record.estimatedCost ??
+		record.monthlyCost ??
+		record.futureCost ??
+		record.value ??
+		record.amount ??
+		record.total;
+
+	if (typeof directValue === "number" || typeof directValue === "string") {
+		return directValue;
+	}
+
+	for (const nestedValue of Object.values(record)) {
+		const extracted = extractCostValue(nestedValue);
+		if (extracted !== undefined) {
+			return extracted;
+		}
+	}
+
+	return undefined;
+};
+
+const extractCostCurrency = (value: unknown): string | undefined => {
+	if (!value || typeof value !== "object") {
+		return undefined;
+	}
+
+	const record = value as Record<string, unknown>;
+	const currency = record.currency ?? record.currencyCode;
+	if (typeof currency === "string") {
+		return currency;
+	}
+
+	for (const nestedValue of Object.values(record)) {
+		const extracted = extractCostCurrency(nestedValue);
+		if (extracted) {
+			return extracted;
+		}
+	}
+
+	return undefined;
+};
+
+const extractCostMetadata = (value: unknown) => {
+	if (!value || typeof value !== "object") {
+		return {};
+	}
+
+	const record = value as Record<string, unknown>;
+	return {
+		comment: getString(record.comment),
+		costPercentageByCpu: getNumber(record.costPercentageByCpu),
+		costPercentageByMemory: getNumber(record.costPercentageByMemory),
+		creator: getString(record.creator),
+		owner: getString(record.owner),
+		wbs: getString(record.wbs),
+	};
+};
+
+const getString = (value: unknown) => {
+	return typeof value === "string" ? value : undefined;
+};
+
+const getNumber = (value: unknown) => {
+	return typeof value === "number" ? value : undefined;
 };
 
 const getErrorMessage = (error: unknown) => {

@@ -21,6 +21,11 @@ import {
 	getPipelineJobsForAllApplications,
 	RadixApiError,
 } from "./radix-api";
+import {
+	formatAliases,
+	getPipelineJobDnsAliases,
+	getPipelineJobExternalDnsAliases,
+} from "./dns-aliases";
 
 const ALL_APPLICATIONS = "__all__";
 
@@ -202,7 +207,9 @@ export default function PipelineJobs() {
 								icon={getStatusImage(job.status)}
 								title={getJobTitle(job, jobId)}
 								subtitle={formatPipelineName(job.pipeline)}
-								accessories={getJobAccessories(job)}
+								accessories={
+									isShowingDetail ? undefined : getJobAccessories(job)
+								}
 								detail={
 									<List.Item.Detail
 										key={jobId}
@@ -264,14 +271,20 @@ const CommandActions = ({
 					url={openUrl}
 				/>
 			) : null}
-			<Action title="Refresh" icon={Icon.ArrowClockwise} onAction={onRefresh} />
 			{onToggleDetails ? (
 				<Action
 					title={isShowingDetail ? "Hide Details" : "Show Details"}
 					icon={Icon.AppWindowSidebarRight}
+					shortcut={{ modifiers: ["shift"], key: "enter" }}
 					onAction={onToggleDetails}
 				/>
 			) : null}
+			<Action
+				title="Refresh"
+				icon={Icon.ArrowClockwise}
+				shortcut={{ modifiers: ["ctrl"], key: "r" }}
+				onAction={onRefresh}
+			/>
 			{copyValue ? (
 				<Action.CopyToClipboard title="Copy Value" content={copyValue} />
 			) : null}
@@ -472,6 +485,9 @@ const formatDate = (value: string | undefined) => {
 };
 
 const formatJobDetail = (job: PipelineJobListItem, host: string) => {
+	const dnsAliases = getPipelineJobDnsAliases(job);
+	const externalDnsAliases = getPipelineJobExternalDnsAliases(job);
+
 	return `# ${job.applicationName}
 
 Status: \`${job.status || "Unknown"}\`
@@ -481,6 +497,10 @@ Pipeline: \`${formatPipelineName(job.pipeline)}\`
 Deployment: \`${getDeploymentLabel(job) || "-"}\`
 
 Host: \`${host}\`
+
+DNS aliases: ${formatAliases(dnsAliases)}
+
+External DNS aliases: ${formatAliases(externalDnsAliases)}
 
 ## Job
 

@@ -22,6 +22,11 @@ import {
 	getCurrentApiHost,
 	getEnvironmentOverview,
 } from "./radix-api";
+import {
+	formatAliases,
+	getEnvironmentDnsAliases,
+	getEnvironmentExternalDnsAliases,
+} from "./dns-aliases";
 
 const ALL_APPLICATIONS = "__all__";
 
@@ -197,7 +202,11 @@ export default function Environments() {
 								id={environmentId}
 								icon={getEnvironmentStatusImage(environment)}
 								title={environment.applicationName}
-								accessories={getEnvironmentAccessories(environment)}
+								accessories={
+									isShowingDetail
+										? undefined
+										: getEnvironmentAccessories(environment)
+								}
 								detail={
 									<List.Item.Detail
 										key={environmentId}
@@ -259,6 +268,14 @@ const CommandActions = ({
 					url={deploymentUrls[0].url}
 				/>
 			) : null}
+			{onToggleDetails ? (
+				<Action
+					title={isShowingDetail ? "Hide Details" : "Show Details"}
+					icon={Icon.AppWindowSidebarRight}
+					shortcut={{ modifiers: ["shift"], key: "enter" }}
+					onAction={onToggleDetails}
+				/>
+			) : null}
 			{deploymentUrls?.[0] ? (
 				<Action.CopyToClipboard
 					title={`Copy ${deploymentUrls[0].componentName} URL`}
@@ -266,14 +283,12 @@ const CommandActions = ({
 					content={deploymentUrls[0].url}
 				/>
 			) : null}
-			<Action title="Refresh" icon={Icon.ArrowClockwise} onAction={onRefresh} />
-			{onToggleDetails ? (
-				<Action
-					title={isShowingDetail ? "Hide Details" : "Show Details"}
-					icon={Icon.AppWindowSidebarRight}
-					onAction={onToggleDetails}
-				/>
-			) : null}
+			<Action
+				title="Refresh"
+				icon={Icon.ArrowClockwise}
+				shortcut={{ modifiers: ["ctrl"], key: "r" }}
+				onAction={onRefresh}
+			/>
 			{copyValue ? (
 				<Action.CopyToClipboard title="Copy Value" content={copyValue} />
 			) : null}
@@ -485,6 +500,9 @@ const formatEnvironmentDetail = (
 	host: string,
 ) => {
 	const deployment = environment.activeDeployment;
+	const dnsAliases = getEnvironmentDnsAliases(environment);
+	const externalDnsAliases = getEnvironmentExternalDnsAliases(environment);
+
 	return `# ${environment.applicationName}
 
 Environment: \`${environment.name || "-"}\`
@@ -493,9 +511,13 @@ Status: \`${getDeploymentStatus(environment)}\`
 
 Git ref: \`${getGitRefLabel(environment)}\`
 
-Deployment: \`${deployment?.name || "-"}\`
-
 Host: \`${host}\`
+
+DNS aliases: ${formatAliases(dnsAliases)}
+
+External DNS aliases: ${formatAliases(externalDnsAliases)}
+
+Deployment: \`${deployment?.name || "-"}\`
 
 ## Active Deployment
 
