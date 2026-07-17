@@ -4,13 +4,8 @@ import { NpmTerminalUsageDetails } from "./components/NpmTerminalUsageDetails";
 import { useUninstallPackages } from "./hooks/useUninstallPackages";
 import type { Package } from "./types";
 
-export default function NpmUninstall(props: {
-  arguments?: {
-    path: string;
-  };
-}) {
-  console.log(props);
-  const path = props?.arguments?.path;
+export default function NpmUninstall(props: { cwd?: string }) {
+  const path = props?.cwd;
   if (!path) return <NpmTerminalUsageDetails />;
 
   const {

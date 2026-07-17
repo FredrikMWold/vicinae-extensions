@@ -6,12 +6,8 @@ import { NpmTerminalUsageDetails } from "./components/NpmTerminalUsageDetails";
 import { useInstallPackages } from "./hooks/useInstallPackages";
 import { PackageDetails } from "./components/PackageDetails";
 
-export default function NpmInstall(props: {
-  arguments?: {
-    path: string;
-  };
-}) {
-  const path = props?.arguments?.path;
+export default function NpmInstall(props: { cwd?: string }) {
+  const path = props?.cwd;
   if (!path) return <NpmTerminalUsageDetails />;
   const [query, setQuery] = useState("");
   const [isShowingDetails, setIsShowingDetails] = useState(false);

@@ -6,12 +6,8 @@ import { useGetVersionUpdate } from "./hooks/useGetVersionUpdate";
 import { useUpdatePackages } from "./hooks/useUpdatePackages";
 import type { Package } from "./types";
 
-export default function NpmUpdate(props: {
-  arguments?: {
-    path: string;
-  };
-}) {
-  const path = props?.arguments?.path;
+export default function NpmUpdate(props: { cwd?: string }) {
+  const path = props?.cwd;
   if (!path) return <NpmTerminalUsageDetails />;
 
   const {
