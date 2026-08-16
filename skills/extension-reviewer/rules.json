@@ -1,0 +1,165 @@
+{
+  "version": 3,
+  "rules": [
+    {
+      "id": "MANIFEST-001",
+      "title": "Manifest does not match extension behavior",
+      "defaultSeverity": "warning",
+      "guidance": [
+        "Check that titles, descriptions, commands, categories, preferences, capabilities, setup, material non-obvious services, dependencies, and limitations accurately describe the implementation. The description does NOT need to exhaustively list dependencies.",
+        "Use blocking severity for an obvious factual mismatch, an extension description that describes different behavior, or a command name or description that is clearly misleading about what it runs.",
+        "Use suggestion severity for wording polish, minor clarity improvements, or other non-misleading copy edits.",
+        "Do not report schema or other mechanically verifiable validity checks owned by CI."
+      ]
+    },
+    {
+      "id": "DEPENDENCY-001",
+      "title": "Dependency choice does not match implementation",
+      "defaultSeverity": "warning",
+      "guidance": [
+        "Flag unused, unexpectedly powerful, incoherent, or needlessly redundant dependencies."
+      ]
+    },
+    {
+      "id": "ASSET-001",
+      "title": "Asset does not match its stated purpose",
+      "defaultSeverity": "warning",
+      "guidance": [
+        "Flag deceptive, executable, meaningfully unauditable, or unexplained generated assets.",
+        "Do not inspect the raw bytes of ordinary image assets without concrete evidence that an image is suspicious or mismatched.",
+        "Do not report mechanically verifiable paths, dimensions, or aspect ratios owned by CI, or reject ordinary images merely for using a binary format."
+      ]
+    },
+    {
+      "id": "SECURITY-001",
+      "title": "Unsafe downloaded executable",
+      "defaultSeverity": "blocking",
+      "guidance": [
+        "Reject arbitrary downloaded binaries.",
+        "Allow a justified resource from an established independent source; prefer asking users to install required tools themselves."
+      ]
+    },
+    {
+      "id": "SECURITY-002",
+      "title": "Command or code injection",
+      "defaultSeverity": "blocking",
+      "guidance": [
+        "Use blocking severity only when a realistically uncontrolled or surprising value can alter executable syntax and trigger an action the user did not intend.",
+        "Treat deliberate user input and ordinary local identity data, including the current username, as trusted by default. Do not invent adversarial usernames, filenames, or form values without a concrete path by which an external party can control them.",
+        "Scrutinize remote responses, imported or discovered content, file metadata, command output, and similar values whose contents the user cannot reasonably predict. Establish their provenance and the concrete execution path before reporting a finding.",
+        "Flag eval, Function, decoded executable strings, concealed dynamic imports, and shell construction only when that credible execution path exists. Privilege increases impact but does not by itself establish exploitability.",
+        "Do not flag safely parameterized process arguments merely because they contain dynamic data."
+      ]
+    },
+    {
+      "id": "SECURITY-003",
+      "title": "Credential or sensitive-data exposure",
+      "defaultSeverity": "blocking",
+      "guidance": [
+        "Flag credentials embedded in source, logged, sent to unrelated services, or exposed to commands that do not need them.",
+        "Prefer LocalStorage from @vicinae/api for persistent sensitive extension-owned data when it provides equivalent security, interoperability, and lifecycle behavior.",
+        "Use blocking severity for another persistence mechanism only when LocalStorage clearly covers the complete use case and replacement is unambiguous.",
+        "Allow system keychains, Secret Service, wallets, and platform credential utilities when they are required to interoperate with existing credentials or provide material security behavior that LocalStorage does not establish. Do not infer equivalence merely because LocalStorage can store a string.",
+        "Flag Cache and ad-hoc files when they expose sensitive data or bypass an otherwise equivalent LocalStorage implementation.",
+        "For OAuth access and refresh tokens, use OAuth.PKCEClient.setTokens, getTokens, and removeTokens from @vicinae/api."
+      ]
+    },
+    {
+      "id": "PROCESS-001",
+      "title": "Unsafe or unjustified native process execution",
+      "defaultSeverity": "warning",
+      "guidance": [
+        "Identify spawned programs and confirm their purpose matches the extension.",
+        "Flag unsafe execution and children that can outlive Vicinae; allow legitimate documented system-tool dependencies."
+      ]
+    },
+    {
+      "id": "API-001",
+      "title": "Environment-specific behavior duplicates @vicinae/api",
+      "defaultSeverity": "blocking",
+      "guidance": [
+        "Actively inspect the current @vicinae/api declarations for a functionally equivalent portable replacement.",
+        "Allow essential environment-specific behavior when no equivalent Vicinae API exists.",
+        "Use blocking severity when @vicinae/api obviously covers the complete use case and replacement is unambiguous. Do not report this rule when equivalence is uncertain.",
+        "Name the verified replacement API, but do not speculate about dependency versions or instruct the author to upgrade, install dependencies, or update the lockfile."
+      ]
+    },
+    {
+      "id": "NETWORK-001",
+      "title": "Suspicious or deceptive network usage",
+      "defaultSeverity": "blocking",
+      "guidance": [
+        "Allow network access without a finding when the endpoint reasonably supports the extension's stated purpose, including ordinary APIs and services implied by that purpose.",
+        "Flag unrelated or suspicious destinations, concealed data transmission, undisclosed analytics or tracking, credential or personal-data exfiltration, and clearly unsafe endpoints.",
+        "Do not create a finding merely to inventory legitimate endpoints or demand that obvious service usage be justified."
+      ]
+    },
+    {
+      "id": "UX-001",
+      "title": "Missing actionable error feedback",
+      "defaultSeverity": "warning",
+      "guidance": [
+        "Require useful feedback for operational failures, missing tools, and unsupported environments.",
+        "Do not require redundant handling when Vicinae already presents the failure clearly."
+      ]
+    },
+    {
+      "id": "UX-002",
+      "title": "Missing loading or empty-state feedback",
+      "defaultSeverity": "warning",
+      "guidance": [
+        "Distinguish observable loading, empty, successful, and failed states.",
+        "Do not require loading UI for effectively immediate work or flows handled by a Vicinae component."
+      ]
+    },
+    {
+      "id": "UX-003",
+      "title": "Non-English user-facing text",
+      "defaultSeverity": "blocking",
+      "guidance": [
+        "Require hard-coded user-facing strings such as titles, labels, actions, placeholders, messages, and errors to be in English.",
+        "Allow non-English text when it is content or data, a proper name, or is inherently required by the extension's stated purpose, such as language, translation, dictionary, or region-specific functionality.",
+        "Do not apply this rule to code identifiers, commands, paths, URLs, protocol values, API payloads, test fixtures, or remote user-provided content that is not extension interface copy.",
+        "Report only clear violations; do not guess the language of ambiguous short strings or proper nouns."
+      ]
+    },
+    {
+      "id": "CORRECTNESS-001",
+      "title": "Material logic error causes wrong behavior",
+      "defaultSeverity": "blocking",
+      "guidance": [
+        "Flag high-confidence logic errors that cause the extension's core behavior to produce materially wrong results, perform the wrong action, corrupt or lose data, or fail in realistic common usage.",
+        "Use warning severity for a significant but non-blocking defect affecting a realistic workflow.",
+        "Do not report speculative problems, unlikely edge cases, minor inconsistencies, cosmetic defects, or low-impact logic errors—not even as suggestions.",
+        "Trace the concrete execution path and state the observable wrong behavior; do not report this rule without clear evidence from the changed code.",
+        "When correctness depends on Vicinae API behavior, verify both supported and unsupported claims against the provided current declarations. Documentation silence and model memory are not evidence that an API member is absent."
+      ]
+    },
+    {
+      "id": "FUNCTIONALITY-001",
+      "title": "Duplicates native Vicinae functionality",
+      "defaultSeverity": "blocking",
+      "guidance": [
+        "Use the trusted current product documentation and flag obvious replicas with no meaningful distinction, such as a generic emoji picker.",
+        "Allow integrations with external tools or services and extensions providing distinct data, workflows, or capabilities.",
+        "Report only documented, substantially equivalent built-in functionality with no clear added value."
+      ]
+    },
+    {
+      "id": "QUALITY-001",
+      "title": "Obfuscated, minified, dead, or generated code",
+      "defaultSeverity": "warning",
+      "guidance": [
+        "Reject source that cannot be meaningfully audited; otherwise flag dead paths, commented-out development blocks, and unexplained generated code."
+      ]
+    },
+    {
+      "id": "DECEPTION-001",
+      "title": "Behavior does not match its presentation",
+      "defaultSeverity": "blocking",
+      "guidance": [
+        "Flag concrete misleading names, hidden behavior, description mismatches, concealed execution, or unexplained data transmission; do not report vague suspicion."
+      ]
+    }
+  ]
+}
